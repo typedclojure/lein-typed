@@ -2,6 +2,10 @@
 
 Type checking for Clojure with Clojure core.typed.
 
+## Quickstart
+
+Run `lein typed check`.
+
 ## Usage
 
 Use this for user-level plugins:
@@ -21,6 +25,7 @@ To type check many namespaces, add namespaces to your project.clj like
 Then run
 
     $ lein typed check 
+    ...
 
 To type check a namespace, provide a namespace symbol to check-ns:
 
