@@ -1,3 +1,3 @@
-(defproject lein-typed "0.1.0-SNAPSHOT"
-  :description "Run Typed Clojure"
+(defproject lein-typed "0.1.0"
+  :description "Type checking with Typed Clojure"
   :eval-in-leiningen true)
