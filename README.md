@@ -10,13 +10,13 @@ Run `lein typed check`.
 
 Use this for user-level plugins:
 
-Put `[lein-typed "0.1.0"]` into the `:plugins` vector of your
+Put `[lein-typed "0.2.0"]` into the `:plugins` vector of your
 `:user` profile, or if you are on Leiningen 1.x do `lein plugin install
-lein-typed 0.1.0`.
+lein-typed 0.2.0`.
 
 Use this for project-level plugins:
 
-Put `[lein-typed "0.1.0"]` into the `:plugins` vector of your project.clj.
+Put `[lein-typed "0.2.0"]` into the `:plugins` vector of your project.clj.
 
 To type check many namespaces, add namespaces to your project.clj like
 
@@ -27,9 +27,9 @@ Then run
     $ lein typed check 
     ...
 
-To type check a namespace, provide a namespace symbol to check-ns:
+To type check speific namespaces, provide one or more namespace symbols to `check`:
 
-    $ lein typed check-ns typed-demo.core
+    $ lein typed check typed-demo.core
     Initializing core.typed ...
     "Elapsed time: 5705.247176 msecs"
     core.typed initialized.
