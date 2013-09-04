@@ -50,7 +50,6 @@ is given. Namespaces are not checked.
 Requires core.typed version 0.2.3 or later.
 
     $ lein typed coverage
-    ambrose@ambrose-VirtualBox:~/Projects/typed-demo$ lein typed coverage
     Initializing core.typed ...
     "Elapsed time: 4505.279024 msecs"
     core.typed initialized.
