@@ -27,9 +27,9 @@
                                                     (case impl 
                                                       :clj :check
                                                       :cljs :check-cljs)))
-        check-fn-sym (if cljs?
-                       `clojure.core.typed/check-ns
-                       `cljs.core.typed/check-ns)
+        check-fn-sym (case impl
+                       :clj `clojure.core.typed/check-ns
+                       :cljs `cljs.core.typed/check-ns)
         exit-code (eval-in-project project
                                    `(if-let [nsyms# (seq '~nsyms)]
                                       (let [errors# (doall
