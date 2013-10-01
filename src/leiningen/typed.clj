@@ -6,19 +6,20 @@
   (println "lein-typed: Type checking for Clojure")
   (println "Usage:")
   (println
-" lein typed check        - type check all Clojure namespaces declared in project.clj,
-                           via :core.typed {:check [...]}")
+" lein typed check            - type check all Clojure namespaces declared in project.clj,
+                                via :core.typed {:check [...]}")
   (println 
-" lein typed check nsym+ - only type check Clojure namespaces nsyms")
+" lein typed check nsym+      - only type check Clojure namespaces nsyms")
   (println
-" lein typed check-cljs   - type check all Clojurescript namespaces declared in project.clj,
-                           via :core.typed {:check-cljs [...]}")
+" lein typed check-cljs       - type check all Clojurescript namespaces declared in project.clj,
+                                via :core.typed {:check-cljs [...]}")
   (println 
 " lein typed check-cljs nsym+ - only type check Clojurescript namespaces nsyms")
   (println
-" lein typed coverage - basic type coverage for all namespaces declared in project.clj,
-                       via :core.typed {:check [...]}")
-  (println " lein typed coverage nsym+ - basic type coverage for namespaces nsyms")
+" lein typed coverage         - basic type coverage for all namespaces declared in project.clj,
+                                via :core.typed {:check [...]}")
+  (println 
+" lein typed coverage nsym+   - basic type coverage for namespaces nsyms")
   (flush))
 
 (defn ^:private check* [project impl args]
