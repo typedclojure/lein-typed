@@ -24,10 +24,16 @@
 
 (defn ^:private check* [project impl args]
   {:pre [(#{:clj :cljs} impl)]}
-  (let [nsyms (or (when args (map symbol args)) (-> project :core.typed 
-                                                    (case impl 
-                                                      :clj :check
-                                                      :cljs :check-cljs)))
+  (let [nsyms (or ; manually provided
+                  (when args 
+                    (map symbol args)) 
+                  ; default to project.clj entry
+                  (-> project 
+                      :core.typed 
+                      (get (case impl 
+                             :clj :check
+                             :cljs :check-cljs))))
+        _ (assert (every? symbol? nsyms))
         check-fn-sym (case impl
                        :clj `clojure.core.typed/check-ns
                        :cljs `cljs.core.typed/check-ns)
@@ -38,16 +44,18 @@
                                                         (try (~check-fn-sym nsym#)
                                                              (catch Exception e#
                                                                (println (.getMessage e#))
-                                                               (flush)
-                                                               false))))]
+                                                               (flush)))))]
                                         (when-not (every? #{:ok} errors#)
-                                          (System/exit 1)))
+                                          (println "Found errors")
+                                          (flush)
+                                          (System/exit 1))
+                                        (prn :ok))
                                       (do (println 
-                                            (str "No namespaces provided in project.clj." 
+                                            (str "No namespaces provided in project.clj. "
                                                  "Add namespaces in :core.typed {" 
-                                                 (case impl 
-                                                   :clj :check 
-                                                   :cljs :check-cljs) 
+                                                 ~(case impl 
+                                                    :clj :check 
+                                                    :cljs :check-cljs) 
                                                  " [...]}"))
                                           (flush)))
                                    (case impl
