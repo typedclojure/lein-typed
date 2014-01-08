@@ -3,6 +3,9 @@
             [leiningen.core.main :as main]))
 
 (defn help []
+  "Type checking for Clojure.")
+
+(defn core-typed-help []
   (println "lein-typed: Type checking for Clojure")
   (println "Usage:")
   (println
@@ -88,4 +91,4 @@
     "check" (apply check project args)
     "check-cljs" (apply check-cljs project args)
     "coverage" (apply coverage project args)
-    (help)))
+    (core-typed-help)))
