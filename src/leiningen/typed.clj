@@ -39,7 +39,7 @@
         _ (assert (every? symbol? nsyms))
         check-fn-sym (case impl
                        :clj `clojure.core.typed/check-ns
-                       :cljs `cljs.core.typed/check-ns)
+                       :cljs `cljs.core.typed/check-ns*)
         exit-code (eval-in-project project
                                    `(if-let [nsyms# (seq '~nsyms)]
                                       (let [errors# (doall
