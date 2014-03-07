@@ -8,6 +8,8 @@ Run `lein typed check`.
 
 ## Installation
 
+A core.typed [dependency](https://github.com/clojure/core.typed) must be specified.
+
 Use this for user-level plugins:
 
 Put `[lein-typed "0.3.3"]` into the `:plugins` vector of your
@@ -18,7 +20,7 @@ Use this for project-level plugins:
 
 Put `[lein-typed "0.3.3"]` into the `:plugins` vector of your project.clj.
 
-## Checking
+## Clojure Checking
 
 To type check many namespaces, add namespaces to your project.clj like
 
@@ -41,6 +43,19 @@ To type check speific namespaces, provide one or more namespace symbols to `chec
     Start checking typed-demo.core
     Checked typed-demo.core in 94.891391 msecs
     Checked 1 namespaces (approx. 7 lines) in 6138.087383 msecs
+
+## ClojureScript Checking
+
+To type check many ClojureScript namespaces, add namespaces to your project.clj like
+
+    :core.typed {:check-cljs [my.ns1 my.ns2]}
+
+Then run
+
+    $ lein typed check-cljs
+    ...
+
+Requires core.typed 0.2.36 or later.
 
 ## Type coverage
 
