@@ -52,7 +52,8 @@
                                           (println "Found errors")
                                           (flush)
                                           (System/exit 1))
-                                        (prn :ok))
+                                        (prn :ok)
+                                        (shutdown-agents))
                                       (do (println 
                                             (str "No namespaces provided in project.clj. "
                                                  "Add namespaces in :core.typed {" 
@@ -78,7 +79,8 @@
     (eval-in-project project
                      `(if-let [nsyms# (seq '~nsyms)]
                         (if-let [var-coverage# (resolve 'clojure.core.typed/var-coverage)]
-                          (var-coverage# nsyms#)
+                          (do (var-coverage# nsyms#)
+                              (shutdown-agents))
                           (println "Coverage only supported with core.typed 0.2.3+"))
                         (do (println "No namespaces provided in project.clj. Add namespaces in :core.typed {:check [...]}")
                             (flush)))
