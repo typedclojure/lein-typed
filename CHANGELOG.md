@@ -1,3 +1,7 @@
+# 0.3.4
+
+- Add `(shudown-agents)` to operations (thanks Sean Corfield)
+
 # 0.3.3
 
 - ClojureScript uses check-ns* to check namespaces
