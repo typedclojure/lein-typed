@@ -1,6 +1,11 @@
+# 0.3.5
+
+- Fix [CTYP-157](http://dev.clojure.org/jira/browse/CTYP-157)
+  - pass a collection of namespaces to `check-ns`, instead of one at a time
+
 # 0.3.4
 
-- Add `(shudown-agents)` to operations (thanks Sean Corfield)
+- Add `(shutdown-agents)` to operations (thanks Sean Corfield)
 
 # 0.3.3
 

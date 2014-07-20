@@ -36,23 +36,27 @@
                       (get (case impl 
                              :clj :check
                              :cljs :check-cljs))))
-        _ (assert (every? symbol? nsyms))
+        _ (assert (and (coll? nsyms)
+                       (every? symbol? nsyms))
+                  (str
+                    (case impl 
+                      :clj :check
+                      :cljs :check-cljs)
+                    " entry must be a vector of symbols"))
         check-fn-sym (case impl
                        :clj `clojure.core.typed/check-ns
                        :cljs `cljs.core.typed/check-ns*)
         exit-code (eval-in-project project
                                    `(if-let [nsyms# (seq '~nsyms)]
-                                      (let [errors# (doall
-                                                      (for [nsym# nsyms#]
-                                                        (try (~check-fn-sym nsym#)
-                                                             (catch Exception e#
-                                                               (println (.getMessage e#))
-                                                               (flush)))))]
-                                        (when-not (every? #{:ok} errors#)
+                                      (let [res# (try (~check-fn-sym nsyms#)
+                                                      (catch Exception e#
+                                                        (println (.getMessage e#))
+                                                        (flush)))]
+                                        (when-not (#{:ok} res#)
                                           (println "Found errors")
                                           (flush)
                                           (System/exit 1))
-                                        (prn :ok)
+                                        (prn res#)
                                         (shutdown-agents))
                                       (do (println 
                                             (str "No namespaces provided in project.clj. "
