@@ -1,4 +1,4 @@
-(defproject lein-typed "0.4.0-SNAPSHOT"
+(defproject lein-typed "0.4.0"
   :description "Type checking with Typed Clojure"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
