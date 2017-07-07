@@ -28,19 +28,21 @@
   (println
 " lein typed coverage nsym+   - basic type coverage for namespaces nsyms\n")
   (println
-" lein typed infer-spec nsym  - infer clojure.spec's for the given namespace by running tests.
-                                Options:
-                                 :test-timeout-ms     The amount of time in milliseconds a given test
-                                                      can run.
-                                 :test-selectors      A vector of arguments normally passed to `lein test`
-                                                      to narrow tests.")
+" lein typed infer-spec nsym  - infer clojure.spec's for the given namespace by running tests.")
   (println
 " lein typed infer-type nsym  - infer core.typed types's for the given namespace by running tests.
-                                Options:
+                                infer-{spec,type} Options:
                                  :test-timeout-ms     The amount of time in milliseconds a given test
                                                       can run.
-                                 :test-selectors      A vector of arguments normally passed to `lein test`
-                                                      to narrow tests.")
+                                                      Default: No limit.
+                                 :test-selectors      A string containing a vector of arguments normally passed to `lein test`
+                                                      to narrow tests.
+                                                      eg. :test-selectors \"[:integration]\"
+                                                      Default: No selectors.
+                                 :infer-opts          A string containing a map of options to be passed 
+                                                      to `clojure.core.typed/spec-infer` after the :ns argument.
+                                                      eg. :infer-opts \"{:debug true}\"
+                                                      Default: No options.")
   (flush)
   )
 
@@ -220,7 +222,7 @@
 (defn form-for-testing-namespaces
   "Return a form that when eval'd in the context of the project will test each
   namespace and print an overall summary."
-  ([infer-nsym types-or-specs test-timeout-ms namespaces _ & [selectors]]
+  [{:keys [infer-nsym types-or-specs test-timeout-ms infer-opts namespaces selectors]}]
    {:pre [(symbol? infer-nsym)
           (#{:type :spec} types-or-specs)
           (or (integer? test-timeout-ms)
@@ -272,31 +274,47 @@
                                               :type " types "
                                               :spec " specs ")
                                "for " '~infer-nsym " ..."))
-              do-infer# (infer-fn# :ns '~infer-nsym)]
+              do-infer# (infer-fn# :ns '~infer-nsym
+                                   ~@(when infer-opts 
+                                       (apply concat infer-opts)))]
           (println (str "Finished inference, output written to " '~infer-nsym))
           (System/exit 0)
           ;; FIXME Long lag? Shutdown agents doesn't seem to help. I assume
           ;; it has something to do with all those cancelled futures.
           ;(shutdown-agents)
           ;do-infer#
-          )))))
+          ))))
 
 (defn infer [project types-or-specs & args]
-  (let [[infer-nsym args] [(some-> args first symbol)
+  (let [[infer-nsym args] [(some-> (first args) symbol)
                            (next args)]
         _ (assert (symbol? infer-nsym) "Namespace to infer must be provided as first argument.")
-        _ (assert (even? (count args)) "Even number of keyword argument expected.")
+        _ (assert (even? (count args)) (str "Even number of keyword argument expected. "
+                                            args))
         args (into {}
                    (map (fn [[k v]]
                           [(read-string k) v]))
                    (partition 2 args))
-        {:keys [test-selectors test-timeout-ms] :as args} args
+        {:keys [test-selectors test-timeout-ms infer-opts] :as args} args
+        infer-opts (when infer-opts
+                     (let [infer-opts (read-string infer-opts)
+                           _ (assert (map? infer-opts) ":infer-opts must be a string containing a map.")]
+                       infer-opts))
+        test-selectors (when test-selectors
+                         (let [test-selectors (read-string test-selectors)
+                               _ (assert (vector? test-selectors)  ":test-selectors must be a string containing a vector.")]
+                           ;; read-args expects a collection of read'able strings
+                           (map pr-str test-selectors)))
         project (project/merge-profiles project [:leiningen/test :test])
         [nses selectors] (read-args test-selectors project)
         _ (eval/prep project)
         form (form-for-testing-namespaces
-               infer-nsym types-or-specs (some-> test-timeout-ms Long/parseLong)
-               nses nil (vec selectors))]
+               {:infer-nsym infer-nsym
+                :types-or-specs types-or-specs 
+                :test-timeout-ms (some-> test-timeout-ms Long/parseLong)
+                :infer-opts infer-opts
+                :namespaces nses 
+                :selectors (vec selectors)})]
     ;(spit "out-pprint" (with-out-str (clojure.pprint/pprint form)))
     (eval/eval-in-project project form
                           '(require 'clojure.test
