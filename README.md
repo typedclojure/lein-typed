@@ -86,7 +86,7 @@ and core.typed types respectively for namespace `nsym`. Keyword options are desc
 
 Requires `core.typed` 0.4.0 or later, with Clojure 1.9.0-alpha17 or later.
 
-| Options: | |
+| Options:       | |
 | --- | --- |
 | `:test-timeout-ms` |  Restricts each deftest to a specific time quanta before being aborted, in milliseconds (an integer). If the test suite is excessively slow during instrumentation, try lowering this option. 
 |                    |  Default: No timeout  |
