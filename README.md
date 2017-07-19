@@ -86,7 +86,6 @@ and core.typed types respectively for namespace `nsym`. Keyword options are desc
 
 Requires `core.typed` 0.4.0 or later, with Clojure 1.9.0-alpha17 or later.
 
----
 | Options: | |
 ---
 | `:test-timeout-ms` |  Restricts each deftest to a specific time quanta before being aborted, |
@@ -100,7 +99,6 @@ Requires `core.typed` 0.4.0 or later, with Clojure 1.9.0-alpha17 or later.
 |                   |  to `clojure.core.typed/{runtime,spec}-infer` after the :ns argument. |
 |                   |  eg. :infer-opts "{:debug true}" |
 |                   |  Default: No options. |
----
 
 This command first instruments the provided namespace before then running your
 test suite. It then summarizes runtime observations based on your test suite in
