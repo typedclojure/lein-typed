@@ -88,15 +88,10 @@ Requires `core.typed` 0.4.0 or later, with Clojure 1.9.0-alpha17 or later.
 
 | Options: | |
 | --- | --- |
-| `:test-timeout-ms` |  Restricts each deftest to a specific time quanta before being aborted, |
-|                    |  in milliseconds (an integer). If the test suite is excessively slow during instrumentation, |
-|                    |  try lowering this option. |
+| `:test-timeout-ms` |  Restricts each deftest to a specific time quanta before being aborted, in milliseconds (an integer). If the test suite is excessively slow during instrumentation, try lowering this option. 
 |                    |  Default: No timeout  |
-| --- | --- |
 | `:test-selectors` |  A string containing a vector of arguments normally passed to `lein test` to narrow tests. |
-| --- | --- |
-| `:infer-opts`     |  A string containing a map of options to be passed |
-|                   |  to `clojure.core.typed/{runtime,spec}-infer` after the :ns argument. |
+| `:infer-opts`     |  A string containing a map of options to be passed to `clojure.core.typed/{runtime,spec}-infer` after the :ns argument. 
 |                   |  eg. :infer-opts "{:debug true}" |
 |                   |  Default: No options. |
 
