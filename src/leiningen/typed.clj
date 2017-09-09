@@ -228,62 +228,66 @@
           (or (integer? test-timeout-ms)
               (nil? test-timeout-ms))]}
    (let [ns-sym (gensym "namespaces")]
-     `(let [~ns-sym ~(form-for-select-namespaces namespaces selectors)]
-        (when (seq ~ns-sym)
-          (apply require :reload ~ns-sym))
-        (if-let [prepare-infer-fn# (resolve 'clojure.core.typed/prepare-infer-ns)]
-          (prepare-infer-fn# :ns '~infer-nsym)
-          (do (println "Runtime inference only supported with core.typed 0.4.0 or higher.")
-              (System/exit 1)))
-        (let [failures# (atom {})
-              selected-namespaces# ~(form-for-nses-selectors-match selectors ns-sym)
-              ;; from https://stackoverflow.com/a/27550676
-              exec-with-timeout# (fn [timeout-ms# callback#]
-                                   (let [fut# (future (callback#))
-                                         ret# (deref fut# timeout-ms# ::timed-out)]
-                                     (when (= ret# ::timed-out)
-                                       (println "Test timed out.")
-                                       (future-cancel fut#))
-                                     ret#))
-              summary# (binding [clojure.test/*test-out* *out*]
-                         (~form-for-suppressing-unselected-tests
-                           selected-namespaces# ~selectors
-                           #(let []
-                              (binding [~'clojure.test/test-var
-                                        (fn [v#]
-                                          (when-let [t# (:test (meta v#))]
-                                            (binding [~'clojure.test/*testing-vars* (conj ~'clojure.test/*testing-vars* v#)]
-                                              (~'clojure.test/do-report {:type :begin-test-var, :var v#})
-                                              (~'clojure.test/inc-report-counter :test)
-                                              (try (if-some [timeout# ~test-timeout-ms]
-                                                     (exec-with-timeout# timeout# t#)
-                                                     (t#))
-                                                   (catch Throwable e#
-                                                     (~'clojure.test/do-report
-                                                       {:type :error, :message "Uncaught exception, not in assertion."
-                                                        :expected nil, :actual e#})))
-                                              (~'clojure.test/do-report {:type :end-test-var, :var v#}))))]
-                                (when ~test-timeout-ms
-                                  (println (str "Testing with " ~test-timeout-ms "ms timeout")))
-                                (apply ~'clojure.test/run-tests selected-namespaces#)))))
-              infer-fn# ~(case types-or-specs
-                           :type `(resolve 'clojure.core.typed/runtime-infer)
-                           :spec `(resolve 'clojure.core.typed/spec-infer))
-              _# (assert infer-fn# "Cannot find core.typed inference function")
-              _# (println (str "Inferring" ~(case types-or-specs
-                                              :type " types "
-                                              :spec " specs ")
-                               "for " '~infer-nsym " ..."))
-              do-infer# (infer-fn# :ns '~infer-nsym
-                                   ~@(when infer-opts 
-                                       (apply concat infer-opts)))]
-          (println (str "Finished inference, output written to " '~infer-nsym))
-          (System/exit 0)
-          ;; FIXME Long lag? Shutdown agents doesn't seem to help. I assume
-          ;; it has something to do with all those cancelled futures.
-          ;(shutdown-agents)
-          ;do-infer#
-          ))))
+     `(try
+        (let [~ns-sym ~(form-for-select-namespaces namespaces selectors)]
+          (when (seq ~ns-sym)
+            (apply require :reload ~ns-sym))
+          (if-let [prepare-infer-fn# (resolve 'clojure.core.typed/prepare-infer-ns)]
+            (prepare-infer-fn# :ns '~infer-nsym)
+            (do (println "Runtime inference only supported with core.typed 0.4.0 or higher.")
+                (System/exit 1)))
+          (let [failures# (atom {})
+                selected-namespaces# ~(form-for-nses-selectors-match selectors ns-sym)
+                ;; from https://stackoverflow.com/a/27550676
+                exec-with-timeout# (fn [timeout-ms# callback#]
+                                     (let [fut# (future (callback#))
+                                           ret# (deref fut# timeout-ms# ::timed-out)]
+                                       (when (= ret# ::timed-out)
+                                         (println "Test timed out.")
+                                         (future-cancel fut#))
+                                       ret#))
+                summary# (binding [clojure.test/*test-out* *out*]
+                           (~form-for-suppressing-unselected-tests
+                             selected-namespaces# ~selectors
+                             #(let []
+                                (binding [~'clojure.test/test-var
+                                          (fn [v#]
+                                            (when-let [t# (:test (meta v#))]
+                                              (binding [~'clojure.test/*testing-vars* (conj ~'clojure.test/*testing-vars* v#)]
+                                                (~'clojure.test/do-report {:type :begin-test-var, :var v#})
+                                                (~'clojure.test/inc-report-counter :test)
+                                                (try (if-some [timeout# ~test-timeout-ms]
+                                                       (exec-with-timeout# timeout# t#)
+                                                       (t#))
+                                                     (catch Throwable e#
+                                                       (~'clojure.test/do-report
+                                                         {:type :error, :message "Uncaught exception, not in assertion."
+                                                          :expected nil, :actual e#})))
+                                                (~'clojure.test/do-report {:type :end-test-var, :var v#}))))]
+                                  (when ~test-timeout-ms
+                                    (println (str "Testing with " ~test-timeout-ms "ms timeout")))
+                                  (apply ~'clojure.test/run-tests selected-namespaces#)))))
+                infer-fn# ~(case types-or-specs
+                             :type `(resolve 'clojure.core.typed/runtime-infer)
+                             :spec `(resolve 'clojure.core.typed/spec-infer))
+                _# (assert infer-fn# "Cannot find core.typed inference function")
+                _# (println (str "Inferring" ~(case types-or-specs
+                                                :type " types "
+                                                :spec " specs ")
+                                 "for " '~infer-nsym " ..."))
+                do-infer# (infer-fn# :ns '~infer-nsym
+                                     ~@(when infer-opts 
+                                         (apply concat infer-opts)))]
+            (println (str "Finished inference, output written to " '~infer-nsym))
+            (System/exit 0)))
+            ;; FIXME Long lag? Shutdown agents doesn't seem to help. I assume
+            ;; it has something to do with all those cancelled futures.
+            ;(shutdown-agents)
+            ;do-infer#
+        (catch Throwable e#
+          ;; seems better than hanging forever..
+          (clojure.repl/pst e#)
+          (System/exit 0)))))
 
 (defn infer [project types-or-specs & args]
   (let [[infer-nsym args] [(some-> (first args) symbol)
@@ -318,7 +322,8 @@
     ;(spit "out-pprint" (with-out-str (clojure.pprint/pprint form)))
     (eval/eval-in-project project form
                           '(require 'clojure.test
-                                    'clojure.core.typed)))
+                                    'clojure.core.typed
+                                    'clojure.repl)))
   nil)
 
 (defn typed
