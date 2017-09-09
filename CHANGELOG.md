@@ -1,3 +1,12 @@
+# 0.4.1 - 9 September 2017
+
+- add `:infer-opts` option
+- more aggressive shutdown in `infer-{type,spec}`
+
+# 0.4.0
+
+- Add `infer-type` and `infer-spec`
+
 # 0.3.5
 
 - Fix [CTYP-157](http://dev.clojure.org/jira/browse/CTYP-157)
