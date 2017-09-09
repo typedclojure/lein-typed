@@ -2,23 +2,26 @@
 
 Type checking for Clojure with Clojure core.typed.
 
-## Quickstart
-
-Run `lein typed check`.
-
 ## Installation
 
 A core.typed [dependency](https://github.com/clojure/core.typed) must be specified.
 
 Use this for user-level plugins:
 
-Put `[lein-typed "0.4.0"]` into the `:plugins` vector of your
+Put `[lein-typed "0.4.1"]` into the `:plugins` vector of your
 `:user` profile, or if you are on Leiningen 1.x do `lein plugin install
-lein-typed 0.4.0`.
+lein-typed 0.4.1`.
 
 Use this for project-level plugins:
 
-Put `[lein-typed "0.4.0"]` into the `:plugins` vector of your project.clj.
+Put `[lein-typed "0.4.1"]` into the `:plugins` vector of your project.clj.
+
+## Quickstart
+
+For type checking, see `lein typed check` below. 
+
+For automatically generating types and specs, see `lein typed infer-type`
+and `lein typed infer-spec`.
 
 ## Clojure Checking
 
