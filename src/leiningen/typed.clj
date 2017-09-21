@@ -1,4 +1,5 @@
 (ns leiningen.typed
+  (:import (java.util.concurrent TimeoutException TimeUnit FutureTask))
   (:require [clojure.java.io :as io]
             [bultitude.core :as b]
             [leiningen.core.eval :refer [eval-in-project] :as eval]
@@ -39,6 +40,9 @@
                                                       to narrow tests.
                                                       eg. :test-selectors \"[:integration]\"
                                                       Default: No selectors.
+                    
+                                 :load-infer-results  If non-nil, a file to load existing inference results from. Disables unit tests.
+                                                      Default: nil.
                                  :infer-opts          A string containing a map of options to be passed 
                                                       to `clojure.core.typed/spec-infer` after the :ns argument.
                                                       eg. :infer-opts \"{:debug true}\"
@@ -222,52 +226,68 @@
 (defn form-for-testing-namespaces
   "Return a form that when eval'd in the context of the project will test each
   namespace and print an overall summary."
-  [{:keys [infer-nsym types-or-specs test-timeout-ms infer-opts namespaces selectors]}]
+  [{:keys [infer-nsym types-or-specs test-timeout-ms infer-opts namespaces selectors
+           load-infer-results]}]
    {:pre [(symbol? infer-nsym)
           (#{:type :spec} types-or-specs)
           (or (integer? test-timeout-ms)
-              (nil? test-timeout-ms))]}
-   (let [ns-sym (gensym "namespaces")]
+              (nil? test-timeout-ms))
+          (or (nil? load-infer-results)
+              (string? load-infer-results))]}
+   (let [run-tests? (not load-infer-results)
+         ns-sym (gensym "namespaces")]
      `(try
         (let [~ns-sym ~(form-for-select-namespaces namespaces selectors)]
-          (when (seq ~ns-sym)
-            (apply require :reload ~ns-sym))
-          (if-let [prepare-infer-fn# (resolve 'clojure.core.typed/prepare-infer-ns)]
-            (prepare-infer-fn# :ns '~infer-nsym)
-            (do (println "Runtime inference only supported with core.typed 0.4.0 or higher.")
-                (System/exit 1)))
-          (let [failures# (atom {})
-                selected-namespaces# ~(form-for-nses-selectors-match selectors ns-sym)
-                ;; from https://stackoverflow.com/a/27550676
-                exec-with-timeout# (fn [timeout-ms# callback#]
-                                     (let [fut# (future (callback#))
-                                           ret# (deref fut# timeout-ms# ::timed-out)]
-                                       (when (= ret# ::timed-out)
-                                         (println "Test timed out.")
-                                         (future-cancel fut#))
-                                       ret#))
-                summary# (binding [clojure.test/*test-out* *out*]
-                           (~form-for-suppressing-unselected-tests
-                             selected-namespaces# ~selectors
-                             #(let []
-                                (binding [~'clojure.test/test-var
-                                          (fn [v#]
-                                            (when-let [t# (:test (meta v#))]
-                                              (binding [~'clojure.test/*testing-vars* (conj ~'clojure.test/*testing-vars* v#)]
-                                                (~'clojure.test/do-report {:type :begin-test-var, :var v#})
-                                                (~'clojure.test/inc-report-counter :test)
-                                                (try (if-some [timeout# ~test-timeout-ms]
-                                                       (exec-with-timeout# timeout# t#)
-                                                       (t#))
-                                                     (catch Throwable e#
-                                                       (~'clojure.test/do-report
-                                                         {:type :error, :message "Uncaught exception, not in assertion."
-                                                          :expected nil, :actual e#})))
-                                                (~'clojure.test/do-report {:type :end-test-var, :var v#}))))]
-                                  (when ~test-timeout-ms
-                                    (println (str "Testing with " ~test-timeout-ms "ms timeout")))
-                                  (apply ~'clojure.test/run-tests selected-namespaces#)))))
-                infer-fn# ~(case types-or-specs
+          (when ~run-tests?
+            (when (seq ~ns-sym)
+              (apply require :reload ~ns-sym))
+            (if-let [prepare-infer-fn# (resolve 'clojure.core.typed/prepare-infer-ns)]
+              (prepare-infer-fn# :ns '~infer-nsym)
+              (do (println "Runtime inference only supported with core.typed 0.4.0 or higher.")
+                  (System/exit 1)))
+            (let [selected-namespaces# ~(form-for-nses-selectors-match selectors ns-sym)
+                  ;; from https://github.com/flatland/clojail/blob/master/src/clojail/core.clj#L40
+                  thunk-timeout#
+                  (fn [thunk# ms#]
+                    (let [task# (FutureTask. thunk#)
+                          thr# (Thread. task#)]
+                      (try
+                        (.start thr#)
+                        (let [v# (.get task# ms# TimeUnit/MILLISECONDS)]
+                          (.cancel task# true)
+                          (.stop thr#) 
+                          v#)
+                        (catch TimeoutException e#
+                          (.cancel task# true)
+                          (.stop thr#) 
+                          (throw (TimeoutException. "Execution timed out.")))
+                        (catch Exception e#
+                          (.cancel task# true)
+                          (.stop thr#)
+                          (throw e#)))))
+                  summary# (binding [clojure.test/*test-out* *out*]
+                             (~form-for-suppressing-unselected-tests
+                               selected-namespaces# ~selectors
+                               #(let []
+                                  (binding [~'clojure.test/test-var
+                                            (fn [v#]
+                                              (when-let [t# (:test (meta v#))]
+                                                (binding [~'clojure.test/*testing-vars* (conj ~'clojure.test/*testing-vars* v#)]
+                                                  (~'clojure.test/do-report {:type :begin-test-var, :var v#})
+                                                  (~'clojure.test/inc-report-counter :test)
+                                                  (try (if-some [timeout# ~test-timeout-ms]
+                                                         (thunk-timeout# t# timeout#)
+                                                         (t#))
+                                                       (catch Throwable e#
+                                                         (~'clojure.test/do-report
+                                                           {:type :error, :message "Uncaught exception, not in assertion."
+                                                            :expected nil, :actual e#})))
+                                                  (~'clojure.test/do-report {:type :end-test-var, :var v#}))))]
+                                    (when ~test-timeout-ms
+                                      (println (str "Testing with " ~test-timeout-ms "ms timeout")))
+                                    (apply ~'clojure.test/run-tests selected-namespaces#)))))]
+              ))
+          (let [infer-fn# ~(case types-or-specs
                              :type `(resolve 'clojure.core.typed/runtime-infer)
                              :spec `(resolve 'clojure.core.typed/spec-infer))
                 _# (assert infer-fn# "Cannot find core.typed inference function")
@@ -276,7 +296,8 @@
                                                 :spec " specs ")
                                  "for " '~infer-nsym " ..."))
                 do-infer# (infer-fn# :ns '~infer-nsym
-                                     ~@(when infer-opts 
+                                     :load-infer-results ~load-infer-results
+                                     ~@(when infer-opts
                                          (apply concat infer-opts)))]
             (println (str "Finished inference, output written to " '~infer-nsym))
             (System/exit 0)))
@@ -299,7 +320,7 @@
                    (map (fn [[k v]]
                           [(read-string k) v]))
                    (partition 2 args))
-        {:keys [test-selectors test-timeout-ms infer-opts] :as args} args
+        {:keys [test-selectors test-timeout-ms infer-opts load-infer-results] :as args} args
         infer-opts (when infer-opts
                      (let [infer-opts (read-string infer-opts)
                            _ (assert (map? infer-opts) ":infer-opts must be a string containing a map.")]
@@ -314,6 +335,7 @@
         _ (eval/prep project)
         form (form-for-testing-namespaces
                {:infer-nsym infer-nsym
+                :load-infer-results load-infer-results
                 :types-or-specs types-or-specs 
                 :test-timeout-ms (some-> test-timeout-ms Long/parseLong)
                 :infer-opts infer-opts
