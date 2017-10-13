@@ -1,3 +1,7 @@
+# 0.4.2 - 12 October 2017
+
+- add `:instrument-opts` option
+
 # 0.4.1 - 9 September 2017
 
 - add `:infer-opts` option
