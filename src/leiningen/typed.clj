@@ -39,12 +39,16 @@
                                  :test-selectors      A string containing a vector of arguments normally passed to `lein test`
                                                       to narrow tests.
                                                       eg. :test-selectors \"[:integration]\"
-                                                      Default: No selectors.
+                                                      Default: \"[:default]\"
                     
                                  :load-infer-results  If non-nil, a file to load existing inference results from. Disables unit tests.
                                                       Default: nil.
                                  :infer-opts          A string containing a map of options to be passed 
                                                       to `clojure.core.typed/spec-infer` after the :ns argument.
+                                                      eg. :infer-opts \"{:debug true}\"
+                                                      Default: No options.
+                                 :instrument-opts     A string containing a map of options to be passed 
+                                                      to `clojure.core.typed/prepare-infer-ns` after the :ns argument.
                                                       eg. :infer-opts \"{:debug true}\"
                                                       Default: No options.")
   (flush)
@@ -227,7 +231,7 @@
   "Return a form that when eval'd in the context of the project will test each
   namespace and print an overall summary."
   [{:keys [infer-nsym types-or-specs test-timeout-ms infer-opts namespaces selectors
-           load-infer-results]}]
+           load-infer-results instrument-opts]}]
    {:pre [(symbol? infer-nsym)
           (#{:type :spec} types-or-specs)
           (or (integer? test-timeout-ms)
@@ -242,7 +246,8 @@
             (when (seq ~ns-sym)
               (apply require :reload ~ns-sym))
             (if-let [prepare-infer-fn# (resolve 'clojure.core.typed/prepare-infer-ns)]
-              (prepare-infer-fn# :ns '~infer-nsym)
+              (prepare-infer-fn# :ns '~infer-nsym
+                                 ~@(apply concat instrument-opts))
               (do (println "Runtime inference only supported with core.typed 0.4.0 or higher.")
                   (System/exit 1)))
             (let [selected-namespaces# ~(form-for-nses-selectors-match selectors ns-sym)
@@ -320,11 +325,15 @@
                    (map (fn [[k v]]
                           [(read-string k) v]))
                    (partition 2 args))
-        {:keys [test-selectors test-timeout-ms infer-opts load-infer-results] :as args} args
+        {:keys [test-selectors test-timeout-ms infer-opts instrument-opts load-infer-results] :as args} args
         infer-opts (when infer-opts
                      (let [infer-opts (read-string infer-opts)
                            _ (assert (map? infer-opts) ":infer-opts must be a string containing a map.")]
                        infer-opts))
+        instrument-opts (when instrument-opts
+                          (let [instrument-opts (read-string instrument-opts)
+                                _ (assert (map? infer-opts) ":instrument-opts must be a string containing a map.")]
+                            instrument-opts))
         test-selectors (when test-selectors
                          (let [test-selectors (read-string test-selectors)
                                _ (assert (vector? test-selectors)  ":test-selectors must be a string containing a vector.")]
@@ -340,7 +349,8 @@
                 :test-timeout-ms (some-> test-timeout-ms Long/parseLong)
                 :infer-opts infer-opts
                 :namespaces nses 
-                :selectors (vec selectors)})]
+                :selectors (vec selectors)
+                :instrument-opts instrument-opts})]
     ;(spit "out-pprint" (with-out-str (clojure.pprint/pprint form)))
     (eval/eval-in-project project form
                           '(require 'clojure.test
