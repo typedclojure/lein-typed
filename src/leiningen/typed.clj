@@ -233,7 +233,7 @@
   [{:keys [infer-nsym types-or-specs test-timeout-ms infer-opts namespaces selectors
            load-infer-results instrument-opts]}]
    {:pre [(symbol? infer-nsym)
-          (#{:type :spec} types-or-specs)
+          (#{:type :spec :all} types-or-specs)
           (or (integer? test-timeout-ms)
               (nil? test-timeout-ms))
           (or (nil? load-infer-results)
@@ -294,11 +294,21 @@
               ))
           (let [infer-fn# ~(case types-or-specs
                              :type `(resolve 'clojure.core.typed/runtime-infer)
-                             :spec `(resolve 'clojure.core.typed/spec-infer))
+                             :spec `(resolve 'clojure.core.typed/spec-infer)
+                             :all `(fn [& {:as opts#}]
+                                     (assert (:out-dir opts#)
+                                             (str "Bad arguments to `lein typed infer-all`: "
+                                                  "Must provide :out-dir, for example, `lein typed infer-all :infer-opts \"{:out-dir \\\"out\\\"}\""))
+                                     (let [_# (apply (resolve 'clojure.core.typed/runtime-infer)
+                                                     (apply concat (update opts# :out-dir #(str % "/types"))))
+                                           _# (apply (resolve 'clojure.core.typed/spec-infer)
+                                                     (apply concat (update opts# :out-dir #(str % "/specs"))))]
+                                       )))
                 _# (assert infer-fn# "Cannot find core.typed inference function")
                 _# (println (str "Inferring" ~(case types-or-specs
                                                 :type " types "
-                                                :spec " specs ")
+                                                :spec " specs "
+                                                :all " types and specs")
                                  "for " '~infer-nsym " ..."))
                 do-infer# (infer-fn# :ns '~infer-nsym
                                      :load-infer-results ~load-infer-results
@@ -367,4 +377,5 @@
     "coverage" (apply coverage project args)
     "infer-type" (apply infer project :type args)
     "infer-spec" (apply infer project :spec args)
+    "infer-all" (apply infer project :all args)
     (core-typed-help)))
