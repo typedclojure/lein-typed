@@ -86,6 +86,11 @@ Requires core.typed version 0.2.3 or later.
 
 `lein typed infer-spec nsym` and `lein typed infer-type nsym` infer clojure.spec specs
 and core.typed types respectively for namespace `nsym`. Keyword options are described below.
+A hybrid command `lein typed infer-all nsym` outputs both types and specs, but 
+an output directory must be provided via
+`:infer-opts "{:out-dir \"your-dir\"}"` (two subfolders will be created, `types` and `specs`
+for the generated types and specs respectively).
+
 
 Requires `core.typed` 0.4.0 or later, with Clojure 1.9.0-alpha17 or later.
 
@@ -95,7 +100,7 @@ Requires `core.typed` 0.4.0 or later, with Clojure 1.9.0-alpha17 or later.
 |                    |  Default: No timeout  |
 | `:test-selectors` |  A string containing a vector of arguments normally passed to `lein test` to narrow tests. |
 | `:infer-opts`     |  A string containing a map of options to be passed to `clojure.core.typed/{runtime,spec}-infer` after the :ns argument. 
-|                   |  eg. :infer-opts "{:debug true}" |
+|                   |  eg. :infer-opts "{:debug true, :out-dir \"out\"}" |
 |                   |  Default: No options. |
 
 This command first instruments the provided namespace before then running your

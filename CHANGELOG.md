@@ -1,3 +1,7 @@
+# 0.4.3 - 18 April 2018
+
+- Add `infer-all` to generate both types and specs more efficiently
+
 # 0.4.2 - 12 October 2017
 
 - add `:instrument-opts` option
