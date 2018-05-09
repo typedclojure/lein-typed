@@ -1,3 +1,7 @@
+# 0.4.4 - 9 May 2018
+
+- Support `nil` argument for `:test-timeout-ms`
+
 # 0.4.3 - 18 April 2018
 
 - Add `infer-all` to generate both types and specs more efficiently
