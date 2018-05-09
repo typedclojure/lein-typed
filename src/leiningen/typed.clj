@@ -34,8 +34,8 @@
 " lein typed infer-type nsym  - infer core.typed types's for the given namespace by running tests.
                                 infer-{spec,type} Options:
                                  :test-timeout-ms     The amount of time in milliseconds a given test
-                                                      can run.
-                                                      Default: No limit.
+                                                      can run, or `nil` for no limit.
+                                                      Default: nil.
                                  :test-selectors      A string containing a vector of arguments normally passed to `lein test`
                                                       to narrow tests.
                                                       eg. :test-selectors \"[:integration]\"
@@ -356,9 +356,11 @@
                {:infer-nsym infer-nsym
                 :load-infer-results load-infer-results
                 :types-or-specs types-or-specs 
-                :test-timeout-ms (some-> test-timeout-ms Long/parseLong)
+                :test-timeout-ms (when (and test-timeout-ms
+                                            (not= test-timeout-ms "nil"))
+                                   (some-> test-timeout-ms Long/parseLong))
                 :infer-opts infer-opts
-                :namespaces nses 
+                :namespaces nses
                 :selectors (vec selectors)
                 :instrument-opts instrument-opts})]
     ;(spit "out-pprint" (with-out-str (clojure.pprint/pprint form)))
