@@ -3,8 +3,10 @@
   (:require [clojure.java.io :as io]
             [bultitude.core :as b]
             [leiningen.core.eval :refer [eval-in-project] :as eval]
+            [clojure.tools.namespace.file :as nfile]
             [leiningen.core.main :as main]
             [leiningen.test :as lt]
+            [leiningen.core.classpath :as lcc]
             [leiningen.core.project :as project]))
 
 (defn help []
@@ -29,9 +31,9 @@
   (println
 " lein typed coverage nsym+   - basic type coverage for namespaces nsyms\n")
   (println
-" lein typed infer-spec nsym  - infer clojure.spec's for the given namespace by running tests.")
+" lein typed infer-spec nsym?  - infer clojure.spec's for the given namespace by running tests.")
   (println
-" lein typed infer-type nsym  - infer core.typed types's for the given namespace by running tests.
+" lein typed infer-type nsym?  - infer core.typed types's for the given namespace by running tests.
                                 infer-{spec,type} Options:
                                  :test-timeout-ms     The amount of time in milliseconds a given test
                                                       can run, or `nil` for no limit.
@@ -325,12 +327,94 @@
           (clojure.repl/pst e#)
           (System/exit 0)))))
 
+(defn ns-form-for-file
+  "Returns the namespace declaration for the file, or
+  nil if not found"
+  [file]
+  (nfile/read-file-ns-decl file))
+
+(defn clj-file? [^String path]
+  (or (.endsWith path ".clj")
+      (.endsWith path ".cljc")))
+
+(defn jar? [^String path]
+  (.endsWith path ".jar"))
+
+(defn get-classpath []
+  (let [pmap (leiningen.core.project/read "project.clj")]
+    (leiningen.core.classpath/get-classpath
+      pmap)))
+
+(defn classpath-directories []
+  (let [fs (get-classpath)]
+    (remove jar? fs)))
+
+(defn project-clj-files 
+  "Returns a sequence of .clj and .cljc File's on the classpath under the
+  current working directory (but not in jars)."
+  []
+  (let [cwd (System/getProperty "user.dir")
+        _ (assert (string? cwd))
+        fs (mapcat #(file-seq (java.io.File. ^String %)) (classpath-directories))]
+    (prn "project-clj-files" fs)
+    (filter #(let [pth (.getAbsolutePath ^java.io.File %)]
+               (prn "pth" pth)
+               (and (.startsWith pth cwd)
+                    (.contains pth "/src/")
+                    (not (.contains pth "/test/"))
+                    (clj-file? pth)))
+            fs)))
+
+(defn number-of-parents
+  "Returns depth of File"
+  [^java.io.File f]
+  (loop [n 0
+         f f]
+    (if-let [p (when f
+                 (.getParentFile f))]
+      (recur (inc n) p)
+      n)))
+
+(defn find-infer-ns []
+  {:post [(symbol? %)]}
+  (let [fs (project-clj-files)
+        ;; each group is in descending order of file size
+        ps (into (sorted-map)
+                 (group-by number-of-parents
+                           (rseq (vec (sort-by #(.length ^java.io.File %) fs)))))
+        _ (prn "ps" ps)
+        f (some (fn [^java.io.File f]
+                  (let [abs (.getAbsolutePath f)
+                        _ (prn "abs" abs)
+                        nsdecl (ns-form-for-file abs)]
+                    (prn "nsdecl" nsdecl)
+                    (when nsdecl
+                      (let [nsym (second nsdecl)
+                            mmap (nth nsdecl 2 nil)
+                            deprecated? (or (-> nsym meta :deprecated)
+                                            (when (map? mmap)
+                                              (:deprecated mmap)))]
+                        (when nsym
+                          (when-not deprecated?
+                            nsym))))))
+                (apply concat (vals ps)))
+        _ (assert f "Could not find Clojure file to infer annotations for.")]
+    f))
+
 (defn infer [project types-or-specs & args]
-  (let [[infer-nsym args] [(some-> (first args) symbol)
-                           (next args)]
+  (let [maybe-provided-nsym (some-> (first args) read-string)
+        provided-nsym? (symbol? maybe-provided-nsym)
+        [infer-nsym args] [(if provided-nsym?
+                             maybe-provided-nsym
+                             (find-infer-ns))
+                           (if provided-nsym?
+                             (next args)
+                             args)]
         _ (assert (symbol? infer-nsym) "Namespace to infer must be provided as first argument.")
         _ (assert (even? (count args)) (str "Even number of keyword argument expected. "
                                             args))
+        _ (when-not provided-nsym?
+            (println (str "No ns provided to infer annotations, defaulting to " infer-nsym)))
         args (into {}
                    (map (fn [[k v]]
                           [(read-string k) v]))

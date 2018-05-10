@@ -1,3 +1,9 @@
+# 0.4.5 - 10 May 2018
+
+- Allow user to omit namespace argument to `infer-{spec,type}`
+  - .clj{c} files with the shallowest absolute path are chosen,
+    and the largest file size wins ties
+
 # 0.4.4 - 9 May 2018
 
 - Support `nil` argument for `:test-timeout-ms`
