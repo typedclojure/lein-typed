@@ -356,9 +356,7 @@
   (let [cwd (System/getProperty "user.dir")
         _ (assert (string? cwd))
         fs (mapcat #(file-seq (java.io.File. ^String %)) (classpath-directories))]
-    (prn "project-clj-files" fs)
     (filter #(let [pth (.getAbsolutePath ^java.io.File %)]
-               (prn "pth" pth)
                (and (.startsWith pth cwd)
                     (.contains pth "/src/")
                     (not (.contains pth "/test/"))
@@ -382,12 +380,9 @@
         ps (into (sorted-map)
                  (group-by number-of-parents
                            (rseq (vec (sort-by #(.length ^java.io.File %) fs)))))
-        _ (prn "ps" ps)
         f (some (fn [^java.io.File f]
                   (let [abs (.getAbsolutePath f)
-                        _ (prn "abs" abs)
                         nsdecl (ns-form-for-file abs)]
-                    (prn "nsdecl" nsdecl)
                     (when nsdecl
                       (let [nsym (second nsdecl)
                             mmap (nth nsdecl 2 nil)

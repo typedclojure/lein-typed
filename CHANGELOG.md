@@ -1,3 +1,7 @@
+# 0.4.6 - 10 May 2018
+
+- Remove debug printing
+
 # 0.4.5 - 10 May 2018
 
 - Allow user to omit namespace argument to `infer-{spec,type}`
