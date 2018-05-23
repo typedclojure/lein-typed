@@ -8,13 +8,13 @@ A core.typed [dependency](https://github.com/clojure/core.typed) must be specifi
 
 Use this for user-level plugins:
 
-Put `[lein-typed "0.4.4"]` into the `:plugins` vector of your
+Put `[lein-typed "0.4.6"]` into the `:plugins` vector of your
 `:user` profile, or if you are on Leiningen 1.x do `lein plugin install
-lein-typed 0.4.2`.
+lein-typed 0.4.6`.
 
 Use this for project-level plugins:
 
-Put `[lein-typed "0.4.4"]` into the `:plugins` vector of your project.clj.
+Put `[lein-typed "0.4.6"]` into the `:plugins` vector of your project.clj.
 
 ## Quickstart
 
