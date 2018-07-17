@@ -421,7 +421,7 @@
                        infer-opts))
         instrument-opts (when instrument-opts
                           (let [instrument-opts (read-string instrument-opts)
-                                _ (assert (map? infer-opts) ":instrument-opts must be a string containing a map.")]
+                                _ (assert (map? instrument-opts) ":instrument-opts must be a string containing a map.")]
                             instrument-opts))
         test-selectors (when test-selectors
                          (let [test-selectors (read-string test-selectors)
