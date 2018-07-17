@@ -310,7 +310,7 @@
                 _# (println (str "Inferring" ~(case types-or-specs
                                                 :type " types "
                                                 :spec " specs "
-                                                :all " types and specs")
+                                                :all " types and specs ")
                                  "for " '~infer-nsym " ..."))
                 do-infer# (infer-fn# :ns '~infer-nsym
                                      :load-infer-results ~load-infer-results
