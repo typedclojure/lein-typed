@@ -100,7 +100,7 @@ Requires `core.typed` 0.4.0 or later, with Clojure 1.9.0-alpha17 or later.
 |                    |  Default: No timeout  |
 | `:test-selectors` |  A string containing a vector of arguments normally passed to `lein test` to narrow tests. |
 | `:infer-opts`     |  A string containing a map of options to be passed to `clojure.core.typed/{runtime,spec}-infer` after the :ns argument. 
-|                   |  eg. :infer-opts "{:debug true, :out-dir \\\"out\\\"}" |
+|                   |  eg. :infer-opts "{:debug :all, :out-dir \\\"out\\\"}" |
 |                   |  Default: No options. |
 
 This command first instruments the provided namespace before then running your
